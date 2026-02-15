@@ -1,0 +1,3 @@
+[Adblock Plus 2.0]
+! Title: AdRules DNS List
+! Expires: 1 (update frequency)
