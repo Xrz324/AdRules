@@ -1,0 +1,82 @@
+name: Update Rules
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'script/**'
+      - 'mod/**'
+      - '.github/workflows/autoupdate.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-rules
+  cancel-in-progress: true
+
+jobs:
+  update-rules:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Update Upstream
+        env:
+          STRICT_UPSTREAM_DOWNLOAD: "true"
+        run: bash ./script/update_upstream.sh
+
+      - name: Build Rules
+        env:
+          STRICT_DNS_CONVERTER: "true"
+          STRICT_MIHOMO_MODIFIERS: "true"
+        run: |
+          bash ./script/update_content.sh
+          bash ./script/update_dns.sh
+
+      - name: Commit and push to main
+        run: |
+          git config --local user.name "github-actions[bot]"
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git add adblock.txt dns.txt
+          if git ls-files --error-unmatch download_failed.log >/dev/null 2>&1; then
+            git rm -f download_failed.log
+          fi
+          for optional_file in adrules-singbox.srs adrules-mihomo.mrs adrules-mihomo.yaml; do
+            if [[ -f "$optional_file" ]]; then
+              git add "$optional_file"
+            elif git ls-files --error-unmatch "$optional_file" >/dev/null 2>&1; then
+              git rm -f "$optional_file"
+            else
+              echo "Skip missing optional output: $optional_file"
+            fi
+          done
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git commit -m "Update rules at $(TZ=UTC-8 date +'%Y-%m-%d %H:%M')"
+
+          if ! git push origin HEAD:main; then
+            echo "Push rejected, trying rebase once..."
+            git fetch origin main
+            if git rebase origin/main; then
+              git push origin HEAD:main
+            else
+              git rebase --abort || true
+              echo "Rebase failed. Please rerun workflow."
+              exit 1
+            fi
+          fi

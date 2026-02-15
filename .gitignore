@@ -1,0 +1,13 @@
+# Temporary directories
+/tmp/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Runtime logs
+download_failed.log
+
+# JetBrains IDE
+.idea
