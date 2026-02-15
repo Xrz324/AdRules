@@ -22,15 +22,15 @@ mkdir -p "${TMP_DIR}/content" "${TMP_DIR}/dns"
 do_download() {
     local url="$1"
     local target_dir="$2"
-    
+
     # 为重名文件添加缓解措施：使用 URL 的 MD5 哈希作为前缀
     local url_hash=$(echo -n "$url" | md5sum | cut -d' ' -f1 | cut -c1-8)
     local original_filename=$(basename "$url")
     local filename="${url_hash}_${original_filename}"
-    
+
     local filepath="${target_dir}/${filename}"
     local tmp_filepath="${filepath}.tmp"
-    
+
     if download_file "$url" "$tmp_filepath"; then
         # 插入来源注释
         sed -i "1i\\! url: $url" "$tmp_filepath"
@@ -54,71 +54,51 @@ export NC GREEN YELLOW RED
 # 规则链接
 content_urls=(
   #damengzhu
-  "https://raw.githubusercontent.com/damengzhu/banad/main/jiekouAD.txt" 
+  "https://raw.githubusercontent.com/damengzhu/banad/main/jiekouAD.txt"
   #Noyllopa NoAppDownload
-  "https://raw.githubusercontent.com/Noyllopa/NoAppDownload/master/NoAppDownload.txt" 
+  "https://raw.githubusercontent.com/Noyllopa/NoAppDownload/master/NoAppDownload.txt"
   #china
-  #"https://filters.adtidy.org/extension/ublock/filters/224.txt" 
+  "https://filters.adtidy.org/windows/filters/224.txt"
   #cjx
   "https://raw.githubusercontent.com/cjx82630/cjxlist/master/cjx-annoyance.txt"
   #anti-anti-ad
   "https://raw.githubusercontent.com/reek/anti-adblock-killer/master/anti-adblock-killer-filters.txt"
   "https://easylist-downloads.adblockplus.org/antiadblockfilters.txt"
   "https://easylist-downloads.adblockplus.org/abp-filters-anti-cv.txt"
-  #--normal
   #Clean Url
-  "https://raw.githubusercontent.com/DandelionSprout/adfilt/master/ClearURLs%20for%20uBo/clear_urls_uboified.txt" 
-  #english opt
-  "https://filters.adtidy.org/extension/ublock/filters/2_optimized.txt"
+  "https://raw.githubusercontent.com/DandelionSprout/adfilt/master/ClearURLs%20for%20uBo/clear_urls_uboified.txt"
+  https://raw.githubusercontent.com/DandelionSprout/adfilt/refs/heads/master/LegitimateURLShortener.txt
+  "https://filters.adtidy.org/windows/filters/17.txt"
   #EasyListPrvacy
   "https://easylist-downloads.adblockplus.org/easyprivacy.txt"
-  #--plus
   #ubo annoyance
-  "https://raw.githubusercontent.com/uBlockOrigin/uAssets/master/filters/annoyances-others.txt" 
+  "https://raw.githubusercontent.com/uBlockOrigin/uAssets/master/filters/annoyances-others.txt"
   #ubo privacy
-  "https://raw.githubusercontent.com/uBlockOrigin/uAssets/master/filters/privacy.txt" 
+  "https://raw.githubusercontent.com/uBlockOrigin/uAssets/master/filters/privacy.txt"
   #adg base
-  "https://filters.adtidy.org/windows/filters/2.txt" 
+  "https://filters.adtidy.org/windows/filters/2.txt"
   #adg privacy
-  "https://filters.adtidy.org/windows/filters/3.txt" 
-  #adg cn
-  #"https://filters.adtidy.org/windows/filters/224.txt" 
+  "https://filters.adtidy.org/windows/filters/3.txt"
   #adg annoyance
-  "https://filters.adtidy.org/windows/filters/14.txt" 
+  "https://filters.adtidy.org/windows/filters/14.txt"
 )
 
 dns_urls=(
-  #Ultimate Ad Filter
-  #"https://filters.adavoid.org/ultimate-ad-filter.txt"
-  #Ultimate Privacy Filter
-  #"https://filters.adavoid.org/ultimate-privacy-filter.txt"
-  #Social
-  "https://filters.adtidy.org/windows/filters/4.txt"
-  #Annoying
-  "https://filters.adtidy.org/windows/filters/14.txt"
-  "https://easylist-downloads.adblockplus.org/fanboy-annoyance.txt"
-  #Mobile Ads
-  "https://filters.adtidy.org/windows/filters/11.txt"
-  #Chinese and English
+  #Anti-AD
+  "https://anti-ad.net/easylist.txt"
+  #AdGuard
+  "https://filters.adtidy.org/windows/filters/15.txt"
   "https://filters.adtidy.org/windows/filters/2.txt"
-  "https://easylist-downloads.adblockplus.org/easylistchina+easylist.txt"
-  #"https://filters.adtidy.org/windows/filters/224.txt" 
-  #Fuck Tracking
-  "https://easylist-downloads.adblockplus.org/easyprivacy.txt"
   "https://filters.adtidy.org/windows/filters/3.txt"
+  "https://filters.adtidy.org/windows/filters/224.txt"
+  #EasyList
+  "https://easylist-downloads.adblockplus.org/easyprivacy.txt"
   #anti-coin
   "https://raw.githubusercontent.com/hoshsadiq/adblock-nocoin-list/master/nocoin.txt"
-  #scam
-  "https://raw.githubusercontent.com/durablenapkin/scamblocklist/master/adguard.txt"
   #damengzhu
   "https://raw.githubusercontent.com/damengzhu/banad/main/jiekouAD.txt"
   #xinggsf
-  "https://raw.githubusercontent.com/xinggsf/Adblock-Plus-Rule/master/mv.txt" 
-  #uBO
-  "https://raw.githubusercontent.com/uBlockOrigin/uAssets/master/filters/annoyances-others.txt" 
-  "https://raw.githubusercontent.com/uBlockOrigin/uAssets/master/filters/badware.txt" 
-  "https://raw.githubusercontent.com/uBlockOrigin/uAssets/master/filters/filters.txt"
-  "https://raw.githubusercontent.com/uBlockOrigin/uAssets/master/filters/privacy.txt"
+  "https://raw.githubusercontent.com/xinggsf/Adblock-Plus-Rule/master/mv.txt"
   #cjx
   "https://raw.githubusercontent.com/cjx82630/cjxlist/master/cjx-annoyance.txt"
   #anti-anti-ad
@@ -127,19 +107,12 @@ dns_urls=(
   "https://easylist-downloads.adblockplus.org/abp-filters-anti-cv.txt"
   #HostsVN
   "https://raw.githubusercontent.com/bigdargon/hostsVN/master/filters/adservers-all.txt"
-  #hosts
-  #anti-windows-spy
-  "https://raw.githubusercontent.com/crazy-max/WindowsSpyBlocker/master/data/hosts/spy.txt"
-  #Notarck-Malware
-  "https://gitlab.com/quidsup/notrack-blocklists/-/raw/master/malware.hosts"
   #StevenBlack
   "https://raw.githubusercontent.com/StevenBlack/hosts/master/data/StevenBlack/hosts"
   #SomeoneNewWhoCares
   "https://someonewhocares.org/hosts/zero/hosts"
   #Brave
   "https://raw.githubusercontent.com/brave/adblock-lists/master/brave-lists/brave-firstparty.txt"
-  #Me
-  "https://raw.githubusercontent.com/Cats-Team/dns-filter/main/abp.txt"
 )
 
 log_info "开始并发下载规则..."
