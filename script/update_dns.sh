@@ -659,6 +659,24 @@ generate_mihomo_classical_rules() {
             }
         }
 
+        function append_port_rule(rule) {
+            if (!(rule in port_seen)) {
+                port_seen[rule] = 1
+                port_rules[++port_count] = rule
+            }
+        }
+
+        function emit_port_range(start_port, end_port) {
+            if (start_port <= 0 || end_port > 65535 || start_port > end_port) {
+                return
+            }
+            if (start_port == end_port) {
+                append_port_rule("DST-PORT," start_port)
+            } else {
+                append_port_rule("DST-PORT," start_port "-" end_port)
+            }
+        }
+
         function range_to_cidr_rules(start_ip, end_ip,    block, remain, p2, prefix) {
             while (start_ip <= end_ip) {
                 block = 1
@@ -715,12 +733,79 @@ generate_mihomo_classical_rules() {
 
             cnt = 0
             for (v = 0; v <= 255; v++) {
-                if (sprintf("%d", v) ~ ("^" expr "$")) {
+                if (sprintf("%d", v) ~ ("^(" expr ")$")) {
                     out_values[v] = 1
                     cnt++
                 }
             }
             return cnt > 0
+        }
+
+        function collect_port_values(token, out_values,    v, expr, cnt) {
+            clear_array(out_values)
+            token = trim(token)
+            if (token == "") {
+                return 0
+            }
+
+            if (substr(token, 1, 1) == "(" && substr(token, length(token), 1) == ")") {
+                token = trim(substr(token, 2, length(token) - 2))
+            }
+            if (token == "") {
+                return 0
+            }
+
+            if (token ~ /^[0-9]{1,5}$/) {
+                v = token + 0
+                if (v <= 0 || v > 65535) {
+                    return 0
+                }
+                out_values[v] = 1
+                return 1
+            }
+
+            if (token == "\\d{1,5}" || token == "\\d+" ||
+                token == "[0-9]{1,5}" || token == "[0-9]+") {
+                for (v = 1; v <= 65535; v++) {
+                    out_values[v] = 1
+                }
+                return 1
+            }
+
+            expr = token
+            gsub(/\\d/, "[0-9]", expr)
+            if (expr ~ /\\[A-CE-Za-ce-z]/) {
+                return 0
+            }
+
+            cnt = 0
+            for (v = 1; v <= 65535; v++) {
+                if (sprintf("%d", v) ~ ("^(" expr ")$")) {
+                    out_values[v] = 1
+                    cnt++
+                }
+            }
+            return cnt > 0
+        }
+
+        function port_values_to_rules(values,    v, in_range, start_v) {
+            in_range = 0
+
+            for (v = 1; v <= 65535; v++) {
+                if (v in values) {
+                    if (!in_range) {
+                        in_range = 1
+                        start_v = v
+                    }
+                } else if (in_range) {
+                    emit_port_range(start_v, v - 1)
+                    in_range = 0
+                }
+            }
+
+            if (in_range) {
+                emit_port_range(start_v, 65535)
+            }
         }
 
         function values_to_ranges(values, out_starts, out_ends,    v, in_range, start_v, n) {
@@ -751,10 +836,13 @@ generate_mihomo_classical_rules() {
             return n
         }
 
-        function regex_to_precise_ip_rule(regex,    normalized, parts, n, suffix, colon_pos, a, b, c, d, i1, i2, i3, i4, n1, n2, n3, n4, start_ip, end_ip) {
+        function regex_to_precise_ip_rule(regex,    normalized, parts, n, suffix, port_expr, colon_pos, a, b, c, d, i1, i2, i3, i4, n1, n2, n3, n4, start_ip, end_ip) {
             cidr_count = 0
             clear_array(cidr_rules)
             clear_array(cidr_seen)
+            port_count = 0
+            clear_array(port_rules)
+            clear_array(port_seen)
 
             if (regex == "") {
                 return 0
@@ -791,8 +879,22 @@ generate_mihomo_classical_rules() {
             if (parts[4] == "") {
                 return 0
             }
-            if (suffix != "" && suffix != ":") {
-                return 0
+            if (suffix != "") {
+                if (suffix == ":") {
+                    # 仅匹配 host:，不附加端口条件
+                } else {
+                    if (substr(suffix, 1, 1) != ":") {
+                        return 0
+                    }
+                    port_expr = substr(suffix, 2)
+                    if (!collect_port_values(port_expr, port_values)) {
+                        return 0
+                    }
+                    port_values_to_rules(port_values)
+                    if (port_count == 0) {
+                        return 0
+                    }
+                }
             }
 
             if (!collect_octet_values(parts[1], octet_values_1) ||
@@ -839,6 +941,85 @@ generate_mihomo_classical_rules() {
                 return 0
             }
             return 1
+        }
+
+        function is_valid_ipv4_octet(value,    num) {
+            if (value !~ /^[0-9]{1,3}$/) {
+                return 0
+            }
+            num = value + 0
+            return (num >= 0 && num <= 255)
+        }
+
+        function regex_to_ipv4_prefix_rule(regex,    normalized, leading_group, prefix_text, n) {
+            cidr_count = 0
+            clear_array(cidr_rules)
+            clear_array(cidr_seen)
+            port_count = 0
+            clear_array(port_rules)
+            clear_array(port_seen)
+
+            if (regex == "") {
+                return 0
+            }
+            # 放宽 IP regex 转换仅用于“URL 前缀 + 转义点分 IP”场景，避免误转普通 regex
+            if (regex !~ /\\\./) {
+                return 0
+            }
+
+            normalized = trim(regex)
+            gsub(/\\\./, ".", normalized)
+            gsub(/\\\//, "/", normalized)
+
+            sub(/^\^/, "", normalized)
+            while (match(normalized, /^\([^)]*\)/)) {
+                leading_group = substr(normalized, RSTART, RLENGTH)
+                if (leading_group ~ /:\/\//) {
+                    normalized = substr(normalized, RLENGTH + 1)
+                    continue
+                }
+                break
+            }
+            sub(/^(https\?:\/\/|https?:\/\/|http:\/\/|ftp:\/\/|wss:\/\/)/, "", normalized)
+
+            if (match(normalized, /^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}([^0-9]|$)/)) {
+                prefix_text = substr(normalized, RSTART, RLENGTH)
+                sub(/[^0-9.].*$/, "", prefix_text)
+                n = split(prefix_text, ip_parts, ".")
+                if (n == 4 &&
+                    is_valid_ipv4_octet(ip_parts[1]) &&
+                    is_valid_ipv4_octet(ip_parts[2]) &&
+                    is_valid_ipv4_octet(ip_parts[3]) &&
+                    is_valid_ipv4_octet(ip_parts[4])) {
+                    append_cidr_rule("IP-CIDR," ip_parts[1] "." ip_parts[2] "." ip_parts[3] "." ip_parts[4] "/32")
+                    return 1
+                }
+            }
+
+            if (match(normalized, /^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\./)) {
+                prefix_text = substr(normalized, RSTART, RLENGTH - 1)
+                n = split(prefix_text, ip_parts, ".")
+                if (n == 3 &&
+                    is_valid_ipv4_octet(ip_parts[1]) &&
+                    is_valid_ipv4_octet(ip_parts[2]) &&
+                    is_valid_ipv4_octet(ip_parts[3])) {
+                    append_cidr_rule("IP-CIDR," ip_parts[1] "." ip_parts[2] "." ip_parts[3] ".0/24")
+                    return 1
+                }
+            }
+
+            if (match(normalized, /^[0-9]{1,3}\.[0-9]{1,3}\./)) {
+                prefix_text = substr(normalized, RSTART, RLENGTH - 1)
+                n = split(prefix_text, ip_parts, ".")
+                if (n == 2 &&
+                    is_valid_ipv4_octet(ip_parts[1]) &&
+                    is_valid_ipv4_octet(ip_parts[2])) {
+                    append_cidr_rule("IP-CIDR," ip_parts[1] "." ip_parts[2] ".0.0/16")
+                    return 1
+                }
+            }
+
+            return 0
         }
 
         function regex_looks_domain_related(regex, normalized, probe) {
@@ -1030,6 +1211,49 @@ generate_mihomo_classical_rules() {
             return "NOT,(" allow_expr ")"
         }
 
+        function join_logic_expr(op, terms, term_count,    expr, i) {
+            if (term_count <= 0) {
+                return ""
+            }
+            expr = terms[1]
+            for (i = 2; i <= term_count; i++) {
+                expr = op ",((" expr "),(" terms[i] "))"
+            }
+            return expr
+        }
+
+        function build_port_expr(    terms, i) {
+            if (port_count <= 0) {
+                return ""
+            }
+            clear_array(terms)
+            for (i = 1; i <= port_count; i++) {
+                terms[i] = port_rules[i]
+            }
+            return join_logic_expr("OR", terms, port_count)
+        }
+
+        function combine_with_and(base_expr, extra_expr, deny_expr,    terms, count) {
+            clear_array(terms)
+            count = 0
+            if (base_expr != "") {
+                terms[++count] = base_expr
+            }
+            if (extra_expr != "") {
+                terms[++count] = extra_expr
+            }
+            if (deny_expr != "") {
+                terms[++count] = deny_expr
+            }
+            if (count == 0) {
+                return ""
+            }
+            if (count == 1) {
+                return terms[1]
+            }
+            return join_logic_expr("AND", terms, count)
+        }
+
         {
             lines[++total] = $0
         }
@@ -1068,8 +1292,20 @@ generate_mihomo_classical_rules() {
                     if (p_regex == "") {
                         continue
                     }
+                    ip_rule_mode = ""
                     if (regex_to_precise_ip_rule(p_regex)) {
-                        converted_ip_regex++
+                        ip_rule_mode = "precise"
+                    } else if (regex_to_ipv4_prefix_rule(p_regex)) {
+                        ip_rule_mode = "prefix"
+                    }
+
+                    if (ip_rule_mode != "") {
+                        if (ip_rule_mode == "precise") {
+                            converted_ip_regex++
+                        } else {
+                            converted_ip_prefix_regex++
+                        }
+                        deny_expr = ""
                         if (m_denyallow != "") {
                             deny_expr = denyallow_expr_from_value(m_denyallow)
                             if (deny_expr == "") {
@@ -1077,13 +1313,23 @@ generate_mihomo_classical_rules() {
                                 continue
                             }
                         }
+                        port_expr = ""
+                        if (ip_rule_mode == "precise" && port_count > 0) {
+                            port_expr = build_port_expr()
+                            if (port_expr == "") {
+                                skipped_unsupported++
+                                continue
+                            }
+                            converted_ip_port_regex++
+                        }
 
                         for (r = 1; r <= cidr_count; r++) {
-                            if (m_denyallow != "") {
-                                print "AND,((" cidr_rules[r] "),(" deny_expr "))"
-                            } else {
-                                print cidr_rules[r]
+                            final_rule = combine_with_and(cidr_rules[r], port_expr, deny_expr)
+                            if (final_rule == "") {
+                                skipped_unsupported++
+                                continue
                             }
+                            print final_rule
                         }
                         continue
                     } else {
@@ -1109,7 +1355,7 @@ generate_mihomo_classical_rules() {
                         skipped_unsupported++
                         continue
                     }
-                    print "AND,((" base_rule "),(" deny_expr "))"
+                    print combine_with_and(base_rule, "", deny_expr)
                 } else {
                     print base_rule
                 }
@@ -1130,6 +1376,12 @@ generate_mihomo_classical_rules() {
             }
             if (converted_ip_regex > 0) {
                 print "[INFO] 将 " converted_ip_regex " 条可精确识别的 IP regex 转换为 IP-CIDR 规则" > "/dev/stderr"
+            }
+            if (converted_ip_port_regex > 0) {
+                print "[INFO] 将 " converted_ip_port_regex " 条含端口约束的 IP regex 转换为 IP-CIDR + DST-PORT 规则" > "/dev/stderr"
+            }
+            if (converted_ip_prefix_regex > 0) {
+                print "[INFO] 将 " converted_ip_prefix_regex " 条 URL/IP 前缀 regex 转换为近似 IP-CIDR 规则" > "/dev/stderr"
             }
         }
     ' dns.txt | sort -u > "$MIHOMO_RULE_FILE"
@@ -1193,7 +1445,7 @@ process_with_mihomo() {
         return 0
     fi
 
-    if grep -nEv '^((DOMAIN(-SUFFIX|-WILDCARD|-REGEX)?|IP-CIDR6?|AND|OR|NOT),)' "$MIHOMO_RULE_FILE" > "$invalid_file"; then
+    if grep -nEv '^((DOMAIN(-SUFFIX|-WILDCARD|-REGEX)?|IP-CIDR6?|DST-PORT|AND|OR|NOT),)' "$MIHOMO_RULE_FILE" > "$invalid_file"; then
         log_error "检测到非 mihomo classical 语法规则，示例:"
         head -n 10 "$invalid_file" >&2
         rm -f "$invalid_file"

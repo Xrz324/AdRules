@@ -1,7 +1,13 @@
-!--
-!
-! From Acl4ssr BanAD.List And BanProgramAD.list 
-! China Ad Alliance
+! DoH IPs
+/^119\.29\.29\.29$/
+/^101\.226\.4\.6$/
+/^218\.30\.118\.6$/
+/^123\.125\.81\.6$/
+/^140\.207\.198\.6$/
+/^101\.198\.192\.33$/
+/^112\.65\.69\.15$/
+
+! From Acl4ssr BanAD.List And BanProgramAD.list
 ||09mk.cn^
 ||100peng.com^
 ||114la.com^
@@ -552,9 +558,7 @@
 ||zedo.com^
 ||zemanta.com^
 !
-!
-!-- 
-!
+!--
 ! App Ads
 ! 163
 ||a.youdao.com^
@@ -605,7 +609,6 @@
 ! 178
 ||analytics.wanmei.com^
 ||gg.stargame.com^
-
 
 ! 360
 ||3600.com^
