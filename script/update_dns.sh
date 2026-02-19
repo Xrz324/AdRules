@@ -752,7 +752,6 @@ generate_mihomo_classical_rules() {
         }
 
         function regex_to_precise_ip_rule(regex,    normalized, parts, n, suffix, colon_pos, a, b, c, d, i1, i2, i3, i4, n1, n2, n3, n4, start_ip, end_ip) {
-            c_ip_rule = ""
             cidr_count = 0
             clear_array(cidr_rules)
             clear_array(cidr_seen)
@@ -772,7 +771,7 @@ generate_mihomo_classical_rules() {
 
             if (normalized ~ /^[0-9A-Fa-f:]+$/ && normalized ~ /:/) {
                 if (normalized !~ /:::/) {
-                    c_ip_rule = "IP-CIDR6," normalized "/128"
+                    append_cidr_rule("IP-CIDR6," normalized "/128")
                     return 1
                 }
                 return 0
@@ -839,19 +838,6 @@ generate_mihomo_classical_rules() {
             if (cidr_count == 0) {
                 return 0
             }
-            if (cidr_count == 1) {
-                c_ip_rule = cidr_rules[1]
-                return 1
-            }
-
-            c_ip_rule = "OR,("
-            for (i1 = 1; i1 <= cidr_count; i1++) {
-                if (i1 > 1) {
-                    c_ip_rule = c_ip_rule ","
-                }
-                c_ip_rule = c_ip_rule "(" cidr_rules[i1] ")"
-            }
-            c_ip_rule = c_ip_rule ")"
             return 1
         }
 
@@ -862,6 +848,15 @@ generate_mihomo_classical_rules() {
             normalized = regex
             gsub(/\\\//, "/", normalized)
 
+            if (normalized ~ /\//) {
+                return 0
+            }
+            if (normalized ~ /\$[[:alnum:]_-]+([=,]|$)/) {
+                return 0
+            }
+            if (normalized ~ /,replace=/) {
+                return 0
+            }
             if (normalized ~ /(https?|ftp|wss?):\/\//) {
                 return 0
             }
@@ -1074,8 +1069,23 @@ generate_mihomo_classical_rules() {
                         continue
                     }
                     if (regex_to_precise_ip_rule(p_regex)) {
-                        base_rule = c_ip_rule
                         converted_ip_regex++
+                        if (m_denyallow != "") {
+                            deny_expr = denyallow_expr_from_value(m_denyallow)
+                            if (deny_expr == "") {
+                                skipped_unsupported++
+                                continue
+                            }
+                        }
+
+                        for (r = 1; r <= cidr_count; r++) {
+                            if (m_denyallow != "") {
+                                print "AND,((" cidr_rules[r] "),(" deny_expr "))"
+                            } else {
+                                print cidr_rules[r]
+                            }
+                        }
+                        continue
                     } else {
                         if (!regex_looks_domain_related(p_regex)) {
                             skipped_non_domain_regex++
