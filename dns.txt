@@ -1,8 +1,8 @@
 [Adblock Plus 2.0]
 ! Title: AdRules DNS List
 ! Expires: 1 (update frequency)
-! Total count: 173662
-! Update: 2026-02-19 21:15:37(GMT+8)
+! Total count: 173652
+! Update: 2026-02-19 21:43:38(GMT+8)
 /(https?:\/\/)104\.154\..{100,}/
 /(https?:\/\/)104\.197\..{100,}/
 /(https?:\/\/)104\.198\..{100,}/
@@ -47,7 +47,6 @@
 /^(\S+\.)?ylx-[0-9].com$/
 /^(a|c)\.[0-9a-f]{56}\.com$/
 /^(mon|tue|wed|thu|fri|sat|sun)\d{1,2}\.\w{2}\d{1,6}\w{4}\.com$/
-/^.+stat\.kugou\.com/
 /^101\.198\.192\.33$/
 /^101\.226\.4\.6$/
 /^112\.65\.69\.15$/
@@ -64,30 +63,19 @@
 /^23\.109\.73\.\d{3}/
 /^94\.242\.247\.(2[0-9]|3[0-2])/
 /^94\.242\.247\.(2[0-9]|3[0-2]):/
-/^admarvel\./
-/^admaster\./
-/^adsage\./
-/^adsensor\./
-/^adservice\./
-/^adsmogo\./
 /^adsrvmedia\./
 /^adsserving\./
-/^adsystem\./
-/^adwords\./
 /^anon1.gt\d{6}.com$/
 /^applovin\./
 /^appsflyer\./
 /^domob\./
 /^duomeng\./
 /^dwtrack\./
-/^guanggao\./
 /^https:\/\/(a|c)\.[0-9a-f]{56}\.com$/
 /^https:\/\/[a-z0-9]+\.[a-z0-9]+\.[a-z]{2,3}:\d{1,6}\/bug\?i=\d+$/
 /^https:\/\/anon1.gt\d{6}.com/
 /^https?:\/\/(.+?\.)?videogamesblogger\.com\/wp-content\/uploads\/.*[a-zA-Z0-9]{8,}\.*/$badfilter
-/^omgmta\./
 /^omgmtaw\./
-/^omniture\./
 /^openx\./
 /^partnerad\./
 /^pingfore\./
@@ -75801,6 +75789,7 @@
 ||kgmipfngmsypp.online^
 ||kgmjprhuegqhvkl.xyz^
 ||kgmmfk.galcomi.jp^
+||kgmobilestat.kugou.com^
 ||kgnejmrvvveri.website^
 ||kgnphcpemzboc.website^
 ||kgnpkgqelpr.net^
@@ -85258,6 +85247,7 @@
 ||log.snow.me^
 ||log.snssdk.com^
 ||log.spotify.com^
+||log.stat.kugou.com^
 ||log.stickflow.xyz^
 ||log.strawpoll.com^
 ||log.strm.yandex.ru^
