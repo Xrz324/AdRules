@@ -1,22 +1,11 @@
-/^admarvel\./
-/^admaster\./
-/^adsage\./
-/^adsensor\./
-/^adservice\./
-/^adsmogo\./
 /^adsrvmedia\./
 /^adsserving\./
-/^adsystem\./
-/^adwords\./
 /^applovin\./
 /^appsflyer\./
 /^domob\./
 /^duomeng\./
 /^dwtrack\./
-/^guanggao\./
-/^omgmta\./
 /^omgmtaw\./
-/^omniture\./
 /^openx\./
 /^partnerad\./
 /^pingfore\./
@@ -24,4 +13,3 @@
 /^supersonicads\./
 /^wlmonitor\./
 /^zjtoolbar\./
-/^.+stat\.kugou\.com/
