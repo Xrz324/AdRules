@@ -1,8 +1,8 @@
 [Adblock Plus 2.0]
 ! Title: AdRules DNS List
 ! Expires: 1 (update frequency)
-! Total count: 182970
-! Update: 2026-02-19 09:52:51(GMT+8)
+! Total count: 182971
+! Update: 2026-02-19 11:32:32(GMT+8)
 /(https?:\/\/)104\.154\..{100,}/
 /(https?:\/\/)104\.197\..{100,}/
 /(https?:\/\/)104\.198\..{100,}/
@@ -519,6 +519,7 @@
 ||104i5bbzs.com^
 ||105app.com^
 ||10614305.xyz^
+||106778d1a7.com^
 ||10753990.xyz^
 ||107788.com^
 ||107a0d5d90.fb33be3463.com^
@@ -17076,7 +17077,6 @@
 ||apiserver.tmb.com.br^
 ||apiserver.vanessagodoifisioterapeuta.com.br^
 ||apiserver.waseller.com.br^
-||apisgame.iqiyi.com^
 ||apishow.babybus.com^
 ||apishowstats.babybus.com^
 ||apisjwer.com^
@@ -22600,7 +22600,6 @@
 ||belgianfixates.cfd^
 ||belgium.wolterskluwer.com^
 ||belia-glp.com^
-||belicimo.pw^
 ||beliebtestewebseite.de^
 ||beliefnormandygarbage.com^
 ||believableordinarygentlemen.com^
@@ -47684,6 +47683,7 @@
 ||eagerknight.com^
 ||eagerlist.pro^
 ||eagerlycuisinecast.com^
+||eagerpossibility.pro^
 ||eagjohwicefoq.website^
 ||eagks.painfulpleasures.com^
 ||eagle-insight.com^
@@ -57558,7 +57558,6 @@
 ||g.hrworks.de^
 ||g.hsw.cn^
 ||g.hutao1.cn^
-||g.huya.com^
 ||g.ign.com^
 ||g.jmangroup.com^
 ||g.jssdk.net^
@@ -65675,7 +65674,6 @@
 ||gxbmiystgwkwq.online^
 ||gxbnp.cn^
 ||gxbpiovpukbaq.website^
-||gxbrowser.net^
 ||gxbslyhlppkws.site^
 ||gxbyumjkqzvtr.online^
 ||gxcaxz.cresus.fr^
@@ -70975,7 +70973,6 @@
 ||ijdl.hbyongwan.cn^
 ||ijemtogharse.net^
 ||ijeu.pdkzyy.cn^
-||ijfcm7bu6ocerxsfq56ka3dtdanunyp4ytwk745b54agtravj2wr2qqd.onion.pet^
 ||ijfilqxkgrchg.space^
 ||ijfksdwe.xyz^
 ||ijfumtjo.cosmoprof.com^
@@ -75298,7 +75295,6 @@
 ||iwa.iplsc.com^
 ||iwad.cachefly.net^
 ||iwaknuqssc.net^
-||iwan-s.video.qq.com^
 ||iwan.sogou.com^
 ||iwanad.baidu.com^
 ||iwanttodeliver.com^
@@ -76883,6 +76879,7 @@
 ||jnyayk.xyz^
 ||jnykjgs.cn^
 ||jnyngg.cn^
+||jnyyjfdayvbek.space^
 ||jnzedp.his-j.com^
 ||jnzn.rttongdiao.com^
 ||jo.429men.com^
@@ -77509,7 +77506,6 @@
 ||js.mumayi.net^
 ||js.mybidadm.com^
 ||js.mzxxiend.com^
-||js.nahnoji.cz^
 ||js.newrutor.eu.org^
 ||js.newsmobile.co.kr^
 ||js.nkrffokcf.com^
@@ -98339,7 +98335,6 @@
 ||minemytraffic.com^
 ||mineon.xin^
 ||miner-linkperfectmoney.com^
-||miner.nablabee.com^
 ||minerad.com^
 ||mineraltip.com^
 ||minero-proxy-*.sh^
@@ -102624,6 +102619,7 @@
 ||neephougroo.net^
 ||neeptumeebaimop.net^
 ||neeseocrea.cyou^
+||nefasstulty.cfd^
 ||nefbjp.xyz^
 ||nefdcnmvbt.com^
 ||nefing.com^
@@ -105305,6 +105301,7 @@
 ||nwtdvlersdowe.space^
 ||nwtgs.muysimple.cl^
 ||nwtvcupvihkhi.site^
+||nwuqpegipbss.com^
 ||nwvboqorfftjs.online^
 ||nwvulrmtxesqh.space^
 ||nwvupz.cljoias.com.br^
@@ -106472,6 +106469,7 @@
 ||ohufbtzfdzbhz.website^
 ||ohungoumpums.net^
 ||ohvk.cn^
+||ohvmwffxfhwed.online^
 ||ohvtrokyq.com^
 ||ohvvvmxtyzvix.online^
 ||ohvzbhmjwpvrh.site^
@@ -106495,6 +106493,7 @@
 ||oicmda.ugyismegveszel.hu^
 ||oicowerbzgzsb.online^
 ||oicygvx51jh7l5zwt259vgjzx.cfd^
+||oidgctozcfsrr.site^
 ||oidqrblzdyhfp.website^
 ||oidtxjvrlckwq.space^
 ||oieo.cn^
@@ -107808,6 +107807,7 @@
 ||oplaksik.online^
 ||oplaphcuz.com^
 ||oplmbxdyndadi.website^
+||oplnuqah.com^
 ||oplog.mulai.pw^
 ||oply.hearstapps.com^
 ||opmnstr.com^
@@ -109386,6 +109386,7 @@
 ||p3r44gnxnhllzm4mgme.cfd^
 ||p3tq.pandasuite.io^
 ||p4-ad.adukwai.com^
+||p4dc8ve6i.com^
 ||p4gdt4um6.com^
 ||p4m57cxozweeyzh165whvfv.cfd^
 ||p4p.sina.com.cn^
@@ -127784,6 +127785,7 @@
 ||sersabion.com^
 ||sersh.com^
 ||sertivepremier.cfd^
+||sertulespouty.cfd^
 ||sertuleyatvyag.qpon^
 ||serumlyrisms.cfd^
 ||serumsugareffective.com^
@@ -133056,7 +133058,6 @@
 ||show.meituangov.cn^
 ||show.pinyoux.com^
 ||show.qx15.com^
-||show.ssports.com^
 ||show.worldcrm.cn^
 ||showbiz.mail.ru^
 ||showcase.inhaabit.com^
@@ -138529,7 +138530,6 @@
 ||sobersaroides.com^
 ||sobesed.com^
 ||sobin.wang^
-||sobot.com^
 ||socadvnet.com^
 ||socagercornet.com^
 ||socagereludesteaey.cyou^
@@ -156685,6 +156685,7 @@
 ||ticvui.alexandani.com^
 ||tidaltv.com^
 ||tidedaybreakdiverge.com^
+||tidhfbtrotuw.com^
 ||tidjufquvobvr.space^
 ||tidningsnatet.se^
 ||tidwaltron.cfd^
@@ -168406,7 +168407,6 @@
 ||v9im3jxxcl3e47qii.cfd^
 ||va-endpoint.com^
 ||va.gxpan.cn^
-||va.huya.com^
 ||vaamsmgfreocmroe-1342087530.cos.sa-saopaulo.myqcloud.com^
 ||vaantjar.cyou^
 ||vaatjcfcwvjsa.space^
@@ -169059,6 +169059,7 @@
 ||vdrebz.kathmandu.com.au^
 ||vdrfes.site^
 ||vdrfga.deagoshop.ru^
+||vdrhhzncvmegp.online^
 ||vdrigb.8190.jp^
 ||vdrn.redplum.com^
 ||vdrqofejdpmbm.online^
@@ -173960,6 +173961,7 @@
 ||wgflkd.gpasplus.com^
 ||wggiud.giordanovini.it^
 ||wghaqpnupaxmj.space^
+||wghfuyzbjgslv.website^
 ||wghjq.cn^
 ||wghoubdaxpsik.site^
 ||wghvvdmdqgdzz.space^
@@ -176016,7 +176018,6 @@
 ||www.empowermychild.com^
 ||www.eulerian.ch^
 ||www.eulerian.cloud^
-||www.exaapi.com^
 ||www.exasrv.com^
 ||www.fakturino.se^
 ||www.fasder12.ru^
