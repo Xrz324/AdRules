@@ -632,17 +632,142 @@ generate_mihomo_classical_rules() {
             return rule
         }
 
-        function regex_to_precise_ip_rule(regex,    normalized, parts, i, token, first_wildcard, prefix_bits, cidr_ip) {
+        function clear_array(arr,    k) {
+            for (k in arr) {
+                delete arr[k]
+            }
+        }
+
+        function ipv4_to_int(a, b, c, d) {
+            return a * 16777216 + b * 65536 + c * 256 + d
+        }
+
+        function int_to_ipv4(v,    a, b, c, d, r) {
+            a = int(v / 16777216)
+            r = v - a * 16777216
+            b = int(r / 65536)
+            r = r - b * 65536
+            c = int(r / 256)
+            d = r - c * 256
+            return a "." b "." c "." d
+        }
+
+        function append_cidr_rule(rule) {
+            if (!(rule in cidr_seen)) {
+                cidr_seen[rule] = 1
+                cidr_rules[++cidr_count] = rule
+            }
+        }
+
+        function range_to_cidr_rules(start_ip, end_ip,    block, remain, p2, prefix) {
+            while (start_ip <= end_ip) {
+                block = 1
+                while ((start_ip % (block * 2) == 0) && (block * 2 > 0)) {
+                    block *= 2
+                }
+
+                remain = end_ip - start_ip + 1
+                while (block > remain) {
+                    block /= 2
+                }
+
+                prefix = 32
+                p2 = block
+                while (p2 > 1) {
+                    p2 /= 2
+                    prefix--
+                }
+
+                append_cidr_rule("IP-CIDR," int_to_ipv4(start_ip) "/" prefix)
+                start_ip += block
+            }
+        }
+
+        function collect_octet_values(token, out_values,    v, expr, cnt) {
+            clear_array(out_values)
+            token = trim(token)
+            if (token == "") {
+                return 0
+            }
+
+            if (token ~ /^[0-9]{1,3}$/) {
+                v = token + 0
+                if (v < 0 || v > 255) {
+                    return 0
+                }
+                out_values[v] = 1
+                return 1
+            }
+
+            if (token == "\\d{1,3}" || token == "\\d{3}" || token == "\\d+" ||
+                token == "[0-9]{1,3}" || token == "[0-9]{3}" || token == "[0-9]+") {
+                for (v = 0; v <= 255; v++) {
+                    out_values[v] = 1
+                }
+                return 1
+            }
+
+            expr = token
+            gsub(/\\d/, "[0-9]", expr)
+            if (expr ~ /\\[A-CE-Za-ce-z]/) {
+                return 0
+            }
+
+            cnt = 0
+            for (v = 0; v <= 255; v++) {
+                if (sprintf("%d", v) ~ ("^" expr "$")) {
+                    out_values[v] = 1
+                    cnt++
+                }
+            }
+            return cnt > 0
+        }
+
+        function values_to_ranges(values, out_starts, out_ends,    v, in_range, start_v, n) {
+            clear_array(out_starts)
+            clear_array(out_ends)
+            in_range = 0
+            n = 0
+
+            for (v = 0; v <= 255; v++) {
+                if (v in values) {
+                    if (!in_range) {
+                        in_range = 1
+                        start_v = v
+                    }
+                } else if (in_range) {
+                    n++
+                    out_starts[n] = start_v
+                    out_ends[n] = v - 1
+                    in_range = 0
+                }
+            }
+
+            if (in_range) {
+                n++
+                out_starts[n] = start_v
+                out_ends[n] = 255
+            }
+            return n
+        }
+
+        function regex_to_precise_ip_rule(regex,    normalized, parts, n, suffix, colon_pos, a, b, c, d, i1, i2, i3, i4, n1, n2, n3, n4, start_ip, end_ip) {
             c_ip_rule = ""
+            cidr_count = 0
+            clear_array(cidr_rules)
+            clear_array(cidr_seen)
 
             if (regex == "") {
                 return 0
             }
-            if (substr(regex, 1, 1) != "^" || substr(regex, length(regex), 1) != "$") {
+            if (substr(regex, 1, 1) != "^") {
                 return 0
             }
 
-            normalized = substr(regex, 2, length(regex) - 2)
+            normalized = substr(regex, 2)
+            if (substr(normalized, length(normalized), 1) == "$") {
+                normalized = substr(normalized, 1, length(normalized) - 1)
+            }
             gsub(/\\\./, ".", normalized)
 
             if (normalized ~ /^[0-9A-Fa-f:]+$/ && normalized ~ /:/) {
@@ -653,54 +778,80 @@ generate_mihomo_classical_rules() {
                 return 0
             }
 
-            split(normalized, parts, ".")
-            if (length(parts) != 4) {
+            n = split(normalized, parts, ".")
+            if (n != 4) {
                 return 0
             }
 
-            first_wildcard = 0
-            cidr_ip = ""
-            for (i = 1; i <= 4; i++) {
-                token = parts[i]
-                if (token ~ /^[0-9]{1,3}$/) {
-                    if (token + 0 < 0 || token + 0 > 255) {
-                        return 0
+            suffix = ""
+            colon_pos = index(parts[4], ":")
+            if (colon_pos > 0) {
+                suffix = substr(parts[4], colon_pos)
+                parts[4] = substr(parts[4], 1, colon_pos - 1)
+            }
+            if (parts[4] == "") {
+                return 0
+            }
+            if (suffix != "" && suffix != ":") {
+                return 0
+            }
+
+            if (!collect_octet_values(parts[1], octet_values_1) ||
+                !collect_octet_values(parts[2], octet_values_2) ||
+                !collect_octet_values(parts[3], octet_values_3) ||
+                !collect_octet_values(parts[4], octet_values_4)) {
+                return 0
+            }
+
+            n1 = values_to_ranges(octet_values_1, octet_start_1, octet_end_1)
+            n2 = values_to_ranges(octet_values_2, octet_start_2, octet_end_2)
+            n3 = values_to_ranges(octet_values_3, octet_start_3, octet_end_3)
+            n4 = values_to_ranges(octet_values_4, octet_start_4, octet_end_4)
+            if (n1 == 0 || n2 == 0 || n3 == 0 || n4 == 0) {
+                return 0
+            }
+
+            for (i1 = 1; i1 <= n1; i1++) {
+                for (i2 = 1; i2 <= n2; i2++) {
+                    for (i3 = 1; i3 <= n3; i3++) {
+                        for (i4 = 1; i4 <= n4; i4++) {
+                            a = octet_start_1[i1]
+                            b = octet_start_2[i2]
+                            c = octet_start_3[i3]
+                            d = octet_start_4[i4]
+                            start_ip = ipv4_to_int(a, b, c, d)
+
+                            a = octet_end_1[i1]
+                            b = octet_end_2[i2]
+                            c = octet_end_3[i3]
+                            d = octet_end_4[i4]
+                            end_ip = ipv4_to_int(a, b, c, d)
+
+                            if (start_ip > end_ip) {
+                                return 0
+                            }
+                            range_to_cidr_rules(start_ip, end_ip)
+                        }
                     }
-                    if (first_wildcard > 0) {
-                        return 0
-                    }
-                    token = token + 0
-                    if (cidr_ip != "") {
-                        cidr_ip = cidr_ip "."
-                    }
-                    cidr_ip = cidr_ip token
-                    continue
                 }
+            }
 
-                if (token == "\\d{1,3}" || token == "\\d{3}" || token == "\\d+" ||
-                    token == "[0-9]{1,3}" || token == "[0-9]{3}" || token == "[0-9]+") {
-                    if (first_wildcard == 0) {
-                        first_wildcard = i
-                    }
-                    if (cidr_ip != "") {
-                        cidr_ip = cidr_ip "."
-                    }
-                    cidr_ip = cidr_ip "0"
-                    continue
+            if (cidr_count == 0) {
+                return 0
+            }
+            if (cidr_count == 1) {
+                c_ip_rule = cidr_rules[1]
+                return 1
+            }
+
+            c_ip_rule = "OR,("
+            for (i1 = 1; i1 <= cidr_count; i1++) {
+                if (i1 > 1) {
+                    c_ip_rule = c_ip_rule ","
                 }
-
-                return 0
+                c_ip_rule = c_ip_rule "(" cidr_rules[i1] ")"
             }
-
-            if (first_wildcard == 1) {
-                return 0
-            }
-            if (first_wildcard == 0) {
-                prefix_bits = 32
-            } else {
-                prefix_bits = (first_wildcard - 1) * 8
-            }
-            c_ip_rule = "IP-CIDR," cidr_ip "/" prefix_bits
+            c_ip_rule = c_ip_rule ")"
             return 1
         }
 

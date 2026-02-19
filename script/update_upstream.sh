@@ -91,12 +91,10 @@ dns_urls=(
   "https://filters.adtidy.org/windows/filters/2.txt"
   "https://filters.adtidy.org/windows/filters/3.txt"
   "https://filters.adtidy.org/windows/filters/224.txt"
-  #EasyList
-  "https://easylist-downloads.adblockplus.org/easyprivacy.txt"
   #damengzhu
   "https://raw.githubusercontent.com/damengzhu/banad/main/jiekouAD.txt"
-  #cjx
-  "https://raw.githubusercontent.com/cjx82630/cjxlist/master/cjx-annoyance.txt"
+  #SMAdHosts
+  "https://raw.githubusercontent.com/2Gardon/SM-Ad-FuckU-hosts/refs/heads/master/SMAdHosts"
   #anti-anti-ad
   "https://raw.githubusercontent.com/reek/anti-adblock-killer/master/anti-adblock-killer-filters.txt"
   "https://easylist-downloads.adblockplus.org/antiadblockfilters.txt"
@@ -107,8 +105,6 @@ dns_urls=(
   "https://raw.githubusercontent.com/StevenBlack/hosts/master/data/StevenBlack/hosts"
   #SomeoneNewWhoCares
   "https://someonewhocares.org/hosts/zero/hosts"
-  #Brave
-  "https://raw.githubusercontent.com/brave/adblock-lists/master/brave-lists/brave-firstparty.txt"
 )
 
 log_info "开始并发下载规则..."
