@@ -67,7 +67,7 @@ prune_covered_content_domains() {
     ' "$domain_file" "$domain_file" | sort -u > "$covered_file"
 
     awk '
-        NR == FNR {
+        FILENAME == ARGV[1] {
             covered[$1] = 1
             next
         }
@@ -93,6 +93,121 @@ prune_covered_content_domains() {
     after_count=$(wc -l < "$content_file")
     removed_count=$((before_count - after_count))
     log_info "内容规则语义去重完成: 移除 ${removed_count} 条被父域规则覆盖的纯域名规则"
+}
+
+prune_redundant_cosmetic_rules() {
+    local content_file="$1"
+    local tmp_output="${content_file}.tmp"
+    local before_count=0
+    local after_count=0
+    local removed_count=0
+
+    before_count=$(wc -l < "$content_file")
+
+    awk '
+        function trim(s) {
+            gsub(/^[[:space:]]+|[[:space:]]+$/, "", s)
+            return s
+        }
+
+        function parse_cosmetic_rule(line,    i, m, pos, best_pos, best_marker, body) {
+            split("#$?#,#$#,#?#,#%#,##", markers, ",")
+            best_pos = 0
+            best_marker = ""
+
+            for (i = 1; i <= 5; i++) {
+                m = markers[i]
+                pos = index(line, m)
+                if (pos > 0 && (best_pos == 0 || pos < best_pos || (pos == best_pos && length(m) > length(best_marker)))) {
+                    best_pos = pos
+                    best_marker = m
+                }
+            }
+
+            if (best_pos == 0) {
+                return 0
+            }
+
+            p_marker = best_marker
+            p_domains = trim(substr(line, 1, best_pos - 1))
+            body = substr(line, best_pos + length(best_marker))
+            p_body = trim(body)
+            if (p_body == "") {
+                return 0
+            }
+
+            return 1
+        }
+
+        function domains_all_positive(domain_expr,    n, i, token, arr) {
+            if (domain_expr == "") {
+                return 0
+            }
+            n = split(domain_expr, arr, /,/)
+            if (n <= 0) {
+                return 0
+            }
+            for (i = 1; i <= n; i++) {
+                token = trim(arr[i])
+                if (token == "" || token ~ /^~/) {
+                    return 0
+                }
+            }
+            return 1
+        }
+
+        BEGIN {
+            removed = 0
+        }
+
+        NR == FNR {
+            line = $0
+            sub(/\r$/, "", line)
+            if (!parse_cosmetic_rule(line)) {
+                next
+            }
+            if (p_domains == "") {
+                global_rules[p_marker "\034" p_body] = 1
+            }
+            next
+        }
+
+        {
+            raw = $0
+            line = $0
+            sub(/\r$/, "", line)
+
+            if (!parse_cosmetic_rule(line)) {
+                print raw
+                next
+            }
+
+            if (p_domains == "") {
+                print raw
+                next
+            }
+
+            key = p_marker "\034" p_body
+            if (domains_all_positive(p_domains) && (key in global_rules)) {
+                removed++
+                next
+            }
+
+            print raw
+        }
+
+        END {
+            print "[INFO] 内容规则语义去重完成: 移除 " removed " 条被全局 cosmetic 规则覆盖的域名定向规则" > "/dev/stderr"
+        }
+    ' "$content_file" "$content_file" > "$tmp_output"
+
+    mv "$tmp_output" "$content_file"
+
+    after_count=$(wc -l < "$content_file")
+    removed_count=$((before_count - after_count))
+    if [[ $removed_count -gt 0 ]]; then
+        log_info "内容规则精简补充: 再移除 ${removed_count} 条全局已覆盖的域名定向 cosmetic 规则"
+    fi
 }
 
 log_info "开始生成最终版内容规则..."
@@ -141,6 +256,7 @@ fi
 # 去重排序
 sort -u "$temp_final" -o "$temp_final"
 prune_covered_content_domains "$temp_final"
+prune_redundant_cosmetic_rules "$temp_final"
 
 count=$(wc -l < "$temp_final")
 {

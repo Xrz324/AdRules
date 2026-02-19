@@ -15,13 +15,78 @@ MIHOMO_VERSION="${MIHOMO_VERSION:-}"
 STRICT_DNS_CONVERTER="${STRICT_DNS_CONVERTER:-false}"
 
 # 检查依赖
-check_deps awk cat chmod curl grep gzip python sed sort tar tr wc
+check_deps awk cat chmod curl grep gzip perl python sed sort tar tr wc
+
+match_domains_by_patterns() {
+    local mode="$1"
+    local pattern_file="$2"
+    local domain_file="$3"
+    local output_file="$4"
+
+    perl - "$mode" "$pattern_file" "$domain_file" <<'PERL' | sort -u > "$output_file"
+use strict;
+use warnings;
+
+my ($mode, $pattern_file, $domain_file) = @ARGV;
+open my $pf, "<", $pattern_file or die "failed to open pattern file: $pattern_file\n";
+open my $df, "<", $domain_file or die "failed to open domain file: $domain_file\n";
+
+my @compiled;
+my $invalid = 0;
+my $loaded = 0;
+
+while (my $line = <$pf>) {
+    chomp $line;
+    $line =~ s/\r$//;
+    next if $line eq "";
+    $loaded++;
+
+    my $re;
+    if ($mode eq "wildcard") {
+        my $expr = $line;
+        $expr =~ s/([\\.^\$+?(){}\[\]|])/\\$1/g;
+        $expr =~ s/\*/.*/g;
+        $re = eval { qr/^$expr$/i };
+    } else {
+        $re = eval { qr/$line/i };
+    }
+
+    if ($@ || !defined $re) {
+        $invalid++;
+        next;
+    }
+    push @compiled, $re;
+}
+
+if ($invalid > 0) {
+    print STDERR "[WARN] 跳过 $invalid 条无法编译的${mode}覆盖模式\n";
+}
+
+if ($loaded == 0 || scalar(@compiled) == 0) {
+    exit 0;
+}
+
+while (my $domain = <$df>) {
+    chomp $domain;
+    $domain =~ s/\r$//;
+    next if $domain eq "";
+    for my $re (@compiled) {
+        if ($domain =~ $re) {
+            print "$domain\n";
+            last;
+        }
+    }
+}
+PERL
+}
 
 prune_covered_domain_rules() {
     local dns_file="$1"
     local plain_domain_file="${TMP_DIR}/dns_plain_domains.txt"
     local wildcard_suffix_file="${TMP_DIR}/dns_wildcard_suffixes.txt"
-    local wildcard_match_file="${TMP_DIR}/dns_wildcard_covered_domains.txt"
+    local wildcard_suffix_match_file="${TMP_DIR}/dns_wildcard_suffix_covered_domains.txt"
+    local wildcard_glob_file="${TMP_DIR}/dns_wildcard_globs.txt"
+    local wildcard_glob_match_file="${TMP_DIR}/dns_wildcard_glob_covered_domains.txt"
     local regex_pattern_file="${TMP_DIR}/dns_cover_regex_patterns.txt"
     local regex_match_file="${TMP_DIR}/dns_regex_covered_domains.txt"
     local covered_domain_file="${TMP_DIR}/dns_covered_domains.txt"
@@ -29,13 +94,16 @@ prune_covered_domain_rules() {
     local tmp_output="${dns_file}.tmp"
     local before_count=0
     local after_count=0
-    local wildcard_removed=0
+    local wildcard_suffix_removed=0
+    local wildcard_glob_removed=0
     local regex_removed=0
     local total_removed=0
 
     : > "$plain_domain_file"
     : > "$wildcard_suffix_file"
-    : > "$wildcard_match_file"
+    : > "$wildcard_suffix_match_file"
+    : > "$wildcard_glob_file"
+    : > "$wildcard_glob_match_file"
     : > "$regex_pattern_file"
     : > "$regex_match_file"
     : > "$covered_domain_file"
@@ -45,6 +113,7 @@ prune_covered_domain_rules() {
     awk '
         {
             line = tolower($0)
+            sub(/\r$/, "", line)
             if (line ~ /^\|\|[a-z0-9.-]+\^$/) {
                 print substr(line, 3, length(line) - 3)
             }
@@ -62,6 +131,7 @@ prune_covered_domain_rules() {
     awk '
         {
             line = tolower($0)
+            sub(/\r$/, "", line)
             if (line ~ /^\|\|\*\.[a-z0-9.-]+\^$/) {
                 print substr(line, 5, length(line) - 5)
             }
@@ -88,8 +158,27 @@ prune_covered_domain_rules() {
                     }
                 }
             }
-        ' "$wildcard_suffix_file" "$plain_domain_file" | sort -u > "$wildcard_match_file"
-        wildcard_removed=$(wc -l < "$wildcard_match_file")
+        ' "$wildcard_suffix_file" "$plain_domain_file" | sort -u > "$wildcard_suffix_match_file"
+        wildcard_suffix_removed=$(wc -l < "$wildcard_suffix_match_file")
+    fi
+
+    # 1.1) 用模糊通配符规则覆盖清理：||*foo*bar.com^ 覆盖 ||afoo1bar.com^
+    awk '
+        {
+            line = tolower($0)
+            sub(/\r$/, "", line)
+            if (line ~ /^\|\|[a-z0-9.*-]+\^$/ && line ~ /\*/) {
+                pattern = substr(line, 3, length(line) - 3)
+                if (pattern !~ /^\*\.[a-z0-9.-]+$/) {
+                    print pattern
+                }
+            }
+        }
+    ' "$dns_file" | sort -u > "$wildcard_glob_file"
+
+    if [[ -s "$wildcard_glob_file" ]]; then
+        match_domains_by_patterns "wildcard" "$wildcard_glob_file" "$plain_domain_file" "$wildcard_glob_match_file"
+        wildcard_glob_removed=$(wc -l < "$wildcard_glob_match_file")
     fi
 
     # 2) 用 regex 规则覆盖清理（仅限无 modifier 或仅 important，跳过 badfilter/denyallow 等）
@@ -179,6 +268,7 @@ prune_covered_domain_rules() {
 
         {
             line = trim($0)
+            sub(/\r$/, "", line)
             if (line == "" || line ~ /^!/) {
                 next
             }
@@ -219,17 +309,11 @@ prune_covered_domain_rules() {
     ' "$dns_file" | sort -u > "$regex_pattern_file"
 
     if [[ -s "$regex_pattern_file" ]]; then
-        if ! LC_ALL=C grep -Pi -f "$regex_pattern_file" "$plain_domain_file" > "$regex_match_file"; then
-            rc=$?
-            if [[ $rc -ne 1 ]]; then
-                log_warn "regex 覆盖清理失败(PCRE 解析异常)，已跳过 regex 覆盖清理"
-                : > "$regex_match_file"
-            fi
-        fi
+        match_domains_by_patterns "regex" "$regex_pattern_file" "$plain_domain_file" "$regex_match_file"
         regex_removed=$(wc -l < "$regex_match_file")
     fi
 
-    cat "$wildcard_match_file" "$regex_match_file" | sort -u > "$covered_domain_file"
+    cat "$wildcard_suffix_match_file" "$wildcard_glob_match_file" "$regex_match_file" | sort -u > "$covered_domain_file"
     if [[ ! -s "$covered_domain_file" ]]; then
         log_info "未发现可清理的覆盖重复域名规则"
         return 0
@@ -241,7 +325,7 @@ prune_covered_domain_rules() {
 
     after_count=$(wc -l < "$dns_file")
     total_removed=$((before_count - after_count))
-    log_info "覆盖清理完成: wildcard 命中 ${wildcard_removed} 条, regex 命中 ${regex_removed} 条, 实际移除 ${total_removed} 条"
+    log_info "覆盖清理完成: wildcard-suffix 命中 ${wildcard_suffix_removed} 条, wildcard-glob 命中 ${wildcard_glob_removed} 条, regex 命中 ${regex_removed} 条, 实际移除 ${total_removed} 条"
 }
 
 # 准备目录
