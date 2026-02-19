@@ -35,6 +35,28 @@ my @compiled;
 my $invalid = 0;
 my $loaded = 0;
 
+sub domain_matches_denyallow {
+    my ($domain, $allow_rule) = @_;
+    return 0 if !defined $allow_rule || $allow_rule eq "";
+
+    my $d = lc($domain);
+    my $a = lc($allow_rule);
+    $a =~ s/^\s+|\s+$//g;
+    return 0 if $a eq "";
+    $a =~ s/^~//;
+    return 0 if $a eq "";
+
+    if ($a =~ /\*/) {
+        my $expr = $a;
+        $expr =~ s/([\\.^\$+?(){}\[\]|])/\\$1/g;
+        $expr =~ s/\*/.*/g;
+        return ($d =~ /^$expr$/i) ? 1 : 0;
+    }
+
+    return 1 if $d eq $a;
+    return ($d =~ /\.\Q$a\E$/i) ? 1 : 0;
+}
+
 while (my $line = <$pf>) {
     chomp $line;
     $line =~ s/\r$//;
@@ -42,20 +64,31 @@ while (my $line = <$pf>) {
     $loaded++;
 
     my $re;
+    my @denyallow;
     if ($mode eq "wildcard") {
         my $expr = $line;
         $expr =~ s/([\\.^\$+?(){}\[\]|])/\\$1/g;
         $expr =~ s/\*/.*/g;
         $re = eval { qr/^$expr$/i };
     } else {
-        $re = eval { qr/$line/i };
+        my ($pattern, $denyallow_raw) = split(/\t/, $line, 2);
+        $pattern = "" if !defined $pattern;
+        $re = eval { qr/$pattern/i };
+
+        if (defined $denyallow_raw && $denyallow_raw ne "") {
+            @denyallow = grep { $_ ne "" } map {
+                my $v = $_;
+                $v =~ s/^\s+|\s+$//g;
+                $v;
+            } split(/\|/, $denyallow_raw);
+        }
     }
 
     if ($@ || !defined $re) {
         $invalid++;
         next;
     }
-    push @compiled, $re;
+    push @compiled, { re => $re, denyallow => \@denyallow };
 }
 
 if ($invalid > 0) {
@@ -70,8 +103,20 @@ while (my $domain = <$df>) {
     chomp $domain;
     $domain =~ s/\r$//;
     next if $domain eq "";
-    for my $re (@compiled) {
-        if ($domain =~ $re) {
+    for my $entry (@compiled) {
+        if ($domain =~ $entry->{re}) {
+            my $skip = 0;
+            if ($mode eq "regex" && scalar(@{$entry->{denyallow}}) > 0) {
+                for my $allow_rule (@{$entry->{denyallow}}) {
+                    if (domain_matches_denyallow($domain, $allow_rule)) {
+                        $skip = 1;
+                        last;
+                    }
+                }
+            }
+            if ($skip) {
+                next;
+            }
             print "$domain\n";
             last;
         }
@@ -222,9 +267,10 @@ prune_covered_domain_rules() {
             return 1
         }
 
-        function analyze_modifiers(mods,    raw, tokens, n, i, token, name) {
+        function analyze_modifiers(mods,    raw, tokens, n, i, token, name, value) {
             m_supported = 1
             m_badfilter = 0
+            m_denyallow = ""
 
             mods = trim(mods)
             if (mods == "" || mods == "$") {
@@ -261,6 +307,21 @@ prune_covered_domain_rules() {
                     m_badfilter = 1
                     continue
                 }
+                if (name == "denyallow") {
+                    value = token
+                    sub(/^[^=]*=/, "", value)
+                    value = trim(value)
+                    if (value == "") {
+                        m_supported = 0
+                        continue
+                    }
+                    if (m_denyallow == "") {
+                        m_denyallow = value
+                    } else {
+                        m_denyallow = m_denyallow "|" value
+                    }
+                    continue
+                }
 
                 m_supported = 0
             }
@@ -281,6 +342,7 @@ prune_covered_domain_rules() {
             cores[idx] = p_core
             supported[idx] = m_supported
             badfilter[idx] = m_badfilter
+            denyallow[idx] = m_denyallow
 
             if (m_badfilter == 1) {
                 disabled[p_core] = 1
@@ -302,7 +364,7 @@ prune_covered_domain_rules() {
 
                 pattern = substr(core, 2, length(core) - 2)
                 if (pattern != "") {
-                    print pattern
+                    printf "%s\t%s\n", pattern, denyallow[i]
                 }
             }
         }
