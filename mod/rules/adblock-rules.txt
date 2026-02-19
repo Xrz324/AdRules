@@ -1,0 +1,27 @@
+!Block Page Visibility
+*##+js(aeld, pagehide)
+*##+js(aeld, visibilitychange)
+
+!全民k歌
+||y.qq.com/music/common/upload/t_kg_activity_show^
+||y.gtimg.cn/music/common//upload/kg_ad^
+||us.l.qq.com/exapp^
+||httpdns.kg.qq.com^
+
+!抖音部分广告
+!番茄小说广告
+||ads*-normal*.zijieapi.com^
+||p*-ad-sign.byteimg.com^
+
+! 快手AD
+||yoda.kwd.inkuai.com^
+||gdfp.gifshow.com^
+||volceapplog.com^
+
+!小米遥控器
+||home.mi.com/cgi-op/api/v1/recommendation/banner^
+
+!由asky88提供的不太记得是什么作用的规则
+||xj-landing.gdtimg.com^
+||*/vhot2.qqvideo.tc.qq.com^
+||soup.v.qq.com^
