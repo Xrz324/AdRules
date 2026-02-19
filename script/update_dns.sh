@@ -591,7 +591,7 @@ generate_mihomo_classical_rules() {
             return s
         }
 
-        function base_rule_for_target(target,    rule, regex) {
+        function base_rule_for_target(target,    rule, regex, mask, split_pos) {
             if (target ~ /\*/) {
                 if (target ~ /^\*\.[[:alnum:]_-]+([.-][[:alnum:]_-]+)+$/) {
                     rule = "DOMAIN-WILDCARD," target
@@ -603,11 +603,131 @@ generate_mihomo_classical_rules() {
                 }
             } else if (target ~ /^([0-9]{1,3}\.){3}[0-9]{1,3}(\/([0-9]|[1-2][0-9]|3[0-2]))?$/ ||
                        target ~ /^[0-9a-fA-F:]+(\/([0-9]|[1-9][0-9]|1[0-1][0-9]|12[0-8]))?$/) {
-                rule = ""
+                if (target ~ /^([0-9]{1,3}\.){3}[0-9]{1,3}(\/([0-9]|[1-2][0-9]|3[0-2]))?$/) {
+                    split_pos = index(target, "/")
+                    if (split_pos > 0) {
+                        mask = substr(target, split_pos + 1)
+                    } else {
+                        mask = "32"
+                    }
+                    rule = "IP-CIDR," target
+                    if (split_pos == 0) {
+                        rule = rule "/" mask
+                    }
+                } else {
+                    split_pos = index(target, "/")
+                    if (split_pos > 0) {
+                        mask = substr(target, split_pos + 1)
+                    } else {
+                        mask = "128"
+                    }
+                    rule = "IP-CIDR6," target
+                    if (split_pos == 0) {
+                        rule = rule "/" mask
+                    }
+                }
             } else {
                 rule = "DOMAIN-SUFFIX," target
             }
             return rule
+        }
+
+        function regex_to_precise_ip_rule(regex,    normalized, parts, i, token, first_wildcard, prefix_bits, cidr_ip) {
+            c_ip_rule = ""
+
+            if (regex == "") {
+                return 0
+            }
+            if (substr(regex, 1, 1) != "^" || substr(regex, length(regex), 1) != "$") {
+                return 0
+            }
+
+            normalized = substr(regex, 2, length(regex) - 2)
+            gsub(/\\\./, ".", normalized)
+
+            if (normalized ~ /^[0-9A-Fa-f:]+$/ && normalized ~ /:/) {
+                if (normalized !~ /:::/) {
+                    c_ip_rule = "IP-CIDR6," normalized "/128"
+                    return 1
+                }
+                return 0
+            }
+
+            split(normalized, parts, ".")
+            if (length(parts) != 4) {
+                return 0
+            }
+
+            first_wildcard = 0
+            cidr_ip = ""
+            for (i = 1; i <= 4; i++) {
+                token = parts[i]
+                if (token ~ /^[0-9]{1,3}$/) {
+                    if (token + 0 < 0 || token + 0 > 255) {
+                        return 0
+                    }
+                    if (first_wildcard > 0) {
+                        return 0
+                    }
+                    token = token + 0
+                    if (cidr_ip != "") {
+                        cidr_ip = cidr_ip "."
+                    }
+                    cidr_ip = cidr_ip token
+                    continue
+                }
+
+                if (token == "\\d{1,3}" || token == "\\d{3}" || token == "\\d+" ||
+                    token == "[0-9]{1,3}" || token == "[0-9]{3}" || token == "[0-9]+") {
+                    if (first_wildcard == 0) {
+                        first_wildcard = i
+                    }
+                    if (cidr_ip != "") {
+                        cidr_ip = cidr_ip "."
+                    }
+                    cidr_ip = cidr_ip "0"
+                    continue
+                }
+
+                return 0
+            }
+
+            if (first_wildcard == 1) {
+                return 0
+            }
+            if (first_wildcard == 0) {
+                prefix_bits = 32
+            } else {
+                prefix_bits = (first_wildcard - 1) * 8
+            }
+            c_ip_rule = "IP-CIDR," cidr_ip "/" prefix_bits
+            return 1
+        }
+
+        function regex_looks_domain_related(regex, normalized, probe) {
+            if (regex == "") {
+                return 0
+            }
+            normalized = regex
+            gsub(/\\\//, "/", normalized)
+
+            if (normalized ~ /(https?|ftp|wss?):\/\//) {
+                return 0
+            }
+            if (normalized ~ /:/) {
+                return 0
+            }
+            if (normalized ~ /\\x[0-9a-fA-F]{2}/) {
+                return 0
+            }
+
+            probe = normalized
+            gsub(/\\[dDsSwWbB]/, "", probe)
+
+            if (probe !~ /[A-Za-z]/) {
+                return 0
+            }
+            return 1
         }
 
         function parse_line(line,    mods, core, caret_pos, suffix, mod_sep, search_from, rel_pos) {
@@ -802,7 +922,16 @@ generate_mihomo_classical_rules() {
                     if (p_regex == "") {
                         continue
                     }
-                    base_rule = "DOMAIN-REGEX," p_regex
+                    if (regex_to_precise_ip_rule(p_regex)) {
+                        base_rule = c_ip_rule
+                        converted_ip_regex++
+                    } else {
+                        if (!regex_looks_domain_related(p_regex)) {
+                            skipped_non_domain_regex++
+                            continue
+                        }
+                        base_rule = "DOMAIN-REGEX," p_regex
+                    }
                 } else if (p_type == "domain" || p_type == "plain") {
                     base_rule = base_rule_for_target(p_domain)
                     if (base_rule == "") {
@@ -834,6 +963,12 @@ generate_mihomo_classical_rules() {
             }
             if (skipped_badfilter > 0) {
                 print "[WARN] 跳过 " skipped_badfilter " 条 badfilter 相关 mihomo 规则" > "/dev/stderr"
+            }
+            if (skipped_non_domain_regex > 0) {
+                print "[WARN] 跳过 " skipped_non_domain_regex " 条与域名匹配无关的 regex 规则" > "/dev/stderr"
+            }
+            if (converted_ip_regex > 0) {
+                print "[INFO] 将 " converted_ip_regex " 条可精确识别的 IP regex 转换为 IP-CIDR 规则" > "/dev/stderr"
             }
         }
     ' dns.txt | sort -u > "$MIHOMO_RULE_FILE"
@@ -897,7 +1032,7 @@ process_with_mihomo() {
         return 0
     fi
 
-    if grep -nEv '^((DOMAIN(-SUFFIX|-WILDCARD|-REGEX)?|AND|OR|NOT),)' "$MIHOMO_RULE_FILE" > "$invalid_file"; then
+    if grep -nEv '^((DOMAIN(-SUFFIX|-WILDCARD|-REGEX)?|IP-CIDR6?|AND|OR|NOT),)' "$MIHOMO_RULE_FILE" > "$invalid_file"; then
         log_error "检测到非 mihomo classical 语法规则，示例:"
         head -n 10 "$invalid_file" >&2
         rm -f "$invalid_file"
