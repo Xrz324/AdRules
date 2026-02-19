@@ -17,6 +17,233 @@ STRICT_DNS_CONVERTER="${STRICT_DNS_CONVERTER:-false}"
 # 检查依赖
 check_deps awk cat chmod curl grep gzip python sed sort tar tr wc
 
+prune_covered_domain_rules() {
+    local dns_file="$1"
+    local plain_domain_file="${TMP_DIR}/dns_plain_domains.txt"
+    local wildcard_suffix_file="${TMP_DIR}/dns_wildcard_suffixes.txt"
+    local wildcard_match_file="${TMP_DIR}/dns_wildcard_covered_domains.txt"
+    local regex_pattern_file="${TMP_DIR}/dns_cover_regex_patterns.txt"
+    local regex_match_file="${TMP_DIR}/dns_regex_covered_domains.txt"
+    local covered_domain_file="${TMP_DIR}/dns_covered_domains.txt"
+    local covered_rule_file="${TMP_DIR}/dns_covered_rules.txt"
+    local tmp_output="${dns_file}.tmp"
+    local before_count=0
+    local after_count=0
+    local wildcard_removed=0
+    local regex_removed=0
+    local total_removed=0
+
+    : > "$plain_domain_file"
+    : > "$wildcard_suffix_file"
+    : > "$wildcard_match_file"
+    : > "$regex_pattern_file"
+    : > "$regex_match_file"
+    : > "$covered_domain_file"
+    : > "$covered_rule_file"
+
+    # 仅处理标准域名规则：||example.com^
+    awk '
+        {
+            line = tolower($0)
+            if (line ~ /^\|\|[a-z0-9.-]+\^$/) {
+                print substr(line, 3, length(line) - 3)
+            }
+        }
+    ' "$dns_file" > "$plain_domain_file"
+
+    if [[ ! -s "$plain_domain_file" ]]; then
+        log_info "未找到可用于覆盖清理的标准域名规则"
+        return 0
+    fi
+
+    before_count=$(wc -l < "$dns_file")
+
+    # 1) 用通配符规则覆盖清理：||*.example.com^ 覆盖 ||a.example.com^
+    awk '
+        {
+            line = tolower($0)
+            if (line ~ /^\|\|\*\.[a-z0-9.-]+\^$/) {
+                print substr(line, 5, length(line) - 5)
+            }
+        }
+    ' "$dns_file" | sort -u > "$wildcard_suffix_file"
+
+    if [[ -s "$wildcard_suffix_file" ]]; then
+        awk '
+            NR == FNR {
+                suffixes[$0] = 1
+                next
+            }
+            {
+                domain = $0
+                n = split(domain, parts, ".")
+                for (i = 2; i <= n; i++) {
+                    parent = parts[i]
+                    for (j = i + 1; j <= n; j++) {
+                        parent = parent "." parts[j]
+                    }
+                    if (parent in suffixes) {
+                        print domain
+                        break
+                    }
+                }
+            }
+        ' "$wildcard_suffix_file" "$plain_domain_file" | sort -u > "$wildcard_match_file"
+        wildcard_removed=$(wc -l < "$wildcard_match_file")
+    fi
+
+    # 2) 用 regex 规则覆盖清理（仅限无 modifier 或仅 important，跳过 badfilter/denyallow 等）
+    awk '
+        function trim(s) {
+            gsub(/^[[:space:]]+|[[:space:]]+$/, "", s)
+            return s
+        }
+
+        function parse_regex_rule(line,    mods, core, mod_sep, search_from, rel_pos) {
+            p_core = ""
+            p_mods = ""
+
+            if (line !~ /^\/.*\/(\$[^[:space:]]+)?$/) {
+                return 0
+            }
+
+            mods = ""
+            core = line
+            mod_sep = 0
+            search_from = 1
+            while (1) {
+                rel_pos = index(substr(line, search_from), "/$")
+                if (rel_pos == 0) {
+                    break
+                }
+                mod_sep = search_from + rel_pos - 1
+                search_from = mod_sep + 2
+            }
+            if (mod_sep > 0) {
+                core = substr(line, 1, mod_sep)
+                mods = substr(line, mod_sep + 1)
+            }
+
+            if (substr(core, 1, 1) != "/" || substr(core, length(core), 1) != "/") {
+                return 0
+            }
+
+            p_core = core
+            p_mods = mods
+            return 1
+        }
+
+        function analyze_modifiers(mods,    raw, tokens, n, i, token, name) {
+            m_supported = 1
+            m_badfilter = 0
+
+            mods = trim(mods)
+            if (mods == "" || mods == "$") {
+                return
+            }
+            if (substr(mods, 1, 1) != "$") {
+                m_supported = 0
+                return
+            }
+
+            raw = substr(mods, 2)
+            if (raw == "") {
+                m_supported = 0
+                return
+            }
+
+            n = split(raw, tokens, /,/)
+            for (i = 1; i <= n; i++) {
+                token = trim(tokens[i])
+                if (token == "") {
+                    continue
+                }
+
+                name = token
+                sub(/=.*/, "", name)
+                if (substr(name, 1, 1) == "~") {
+                    name = substr(name, 2)
+                }
+
+                if (name == "important") {
+                    continue
+                }
+                if (name == "badfilter") {
+                    m_badfilter = 1
+                    continue
+                }
+
+                m_supported = 0
+            }
+        }
+
+        {
+            line = trim($0)
+            if (line == "" || line ~ /^!/) {
+                next
+            }
+            if (!parse_regex_rule(line)) {
+                next
+            }
+
+            analyze_modifiers(p_mods)
+            idx++
+            cores[idx] = p_core
+            supported[idx] = m_supported
+            badfilter[idx] = m_badfilter
+
+            if (m_badfilter == 1) {
+                disabled[p_core] = 1
+            }
+        }
+
+        END {
+            for (i = 1; i <= idx; i++) {
+                core = cores[i]
+                if (badfilter[i] == 1) {
+                    continue
+                }
+                if (supported[i] != 1) {
+                    continue
+                }
+                if (disabled[core] == 1) {
+                    continue
+                }
+
+                pattern = substr(core, 2, length(core) - 2)
+                if (pattern != "") {
+                    print pattern
+                }
+            }
+        }
+    ' "$dns_file" | sort -u > "$regex_pattern_file"
+
+    if [[ -s "$regex_pattern_file" ]]; then
+        if ! LC_ALL=C grep -Pi -f "$regex_pattern_file" "$plain_domain_file" > "$regex_match_file"; then
+            rc=$?
+            if [[ $rc -ne 1 ]]; then
+                log_warn "regex 覆盖清理失败(PCRE 解析异常)，已跳过 regex 覆盖清理"
+                : > "$regex_match_file"
+            fi
+        fi
+        regex_removed=$(wc -l < "$regex_match_file")
+    fi
+
+    cat "$wildcard_match_file" "$regex_match_file" | sort -u > "$covered_domain_file"
+    if [[ ! -s "$covered_domain_file" ]]; then
+        log_info "未发现可清理的覆盖重复域名规则"
+        return 0
+    fi
+
+    sed 's/^/||/; s/$/^/' "$covered_domain_file" | sort -u > "$covered_rule_file"
+    LC_ALL=C grep -vxFf "$covered_rule_file" "$dns_file" > "$tmp_output" || true
+    mv "$tmp_output" "$dns_file"
+
+    after_count=$(wc -l < "$dns_file")
+    total_removed=$((before_count - after_count))
+    log_info "覆盖清理完成: wildcard 命中 ${wildcard_removed} 条, regex 命中 ${regex_removed} 条, 实际移除 ${total_removed} 条"
+}
+
 # 准备目录
 mkdir -p "$TOOLS_DIR"
 cd "$ROOT_DIR"
@@ -38,7 +265,50 @@ for file in "${dns_files[@]}"; do
 done
 
 # 1. 预处理 DNS 规则
-grep -P "^(?:\|\|([a-z0-9.*-]+)\^?|(?:\d{1,3}(?:\.\d{1,3}){3}|[0-9a-fA-F:]+)\s+((?:\*|(?:\*\.)?[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+)|((?:\*|(?:\*\.)?[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+))$" "$dns_raw" | \
+awk '
+    {
+        line = $0
+        sub(/\r$/, "", line)
+
+        # hosts 风格行先裁剪行尾注释，避免 "0.0.0.0 domain #comment" 被误丢弃
+        if (line ~ /^([0-9]{1,3}\.){3}[0-9]{1,3}[[:space:]]+/ ||
+            line ~ /^[0-9a-fA-F:]+[[:space:]]+/) {
+            sub(/[[:space:]]+#.*$/, "", line)
+            gsub(/[[:space:]]+/, " ", line)
+            gsub(/^[[:space:]]+|[[:space:]]+$/, "", line)
+        }
+
+        print line
+    }
+' "$dns_raw" | \
+    grep -P "^(?:\|\|([a-z0-9.*-]+)\^?|(?:\d{1,3}(?:\.\d{1,3}){3}|[0-9a-fA-F:]+)\s+((?:\*|(?:\*\.)?[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+)|((?:\*|(?:\*\.)?[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+))$" | \
+    awk '
+        BEGIN {
+            filtered_hosts = 0
+        }
+
+        function is_blocking_hosts_ip(ip) {
+            return (ip == "0.0.0.0" || ip ~ /^127\./)
+        }
+
+        {
+            line = tolower($0)
+            if (line ~ /^([0-9]{1,3}\.){3}[0-9]{1,3}[[:space:]]+/) {
+                split(line, parts, /[[:space:]]+/)
+                if (!is_blocking_hosts_ip(parts[1])) {
+                    filtered_hosts++
+                    next
+                }
+            }
+            print $0
+        }
+
+        END {
+            if (filtered_hosts > 0) {
+                print "[INFO] 过滤 " filtered_hosts " 条 hosts 重定向规则(非拦截IP)" > "/dev/stderr"
+            }
+        }
+    ' | \
     grep -vE '@|:|\?|\$|#|!|/' | \
     sort -u > dns.txt || true
 
@@ -156,6 +426,7 @@ if [[ -f "./mod/rules/first-dns-rules.txt" ]]; then
     cat ./mod/rules/first-dns-rules.txt >> dns.txt
 fi
 sort -u dns.txt -o dns.txt
+prune_covered_domain_rules dns.txt
 
 # 4. 生成最终 dns.txt (AdGuard Home / ABP)
 count=$(wc -l < dns.txt)

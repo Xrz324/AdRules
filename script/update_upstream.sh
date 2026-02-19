@@ -67,7 +67,7 @@ content_urls=(
   "https://easylist-downloads.adblockplus.org/abp-filters-anti-cv.txt"
   #Clean Url
   "https://raw.githubusercontent.com/DandelionSprout/adfilt/master/ClearURLs%20for%20uBo/clear_urls_uboified.txt"
-  https://raw.githubusercontent.com/DandelionSprout/adfilt/refs/heads/master/LegitimateURLShortener.txt
+  "https://raw.githubusercontent.com/DandelionSprout/adfilt/refs/heads/master/LegitimateURLShortener.txt"
   "https://filters.adtidy.org/windows/filters/17.txt"
   #EasyListPrvacy
   "https://easylist-downloads.adblockplus.org/easyprivacy.txt"
@@ -93,12 +93,8 @@ dns_urls=(
   "https://filters.adtidy.org/windows/filters/224.txt"
   #EasyList
   "https://easylist-downloads.adblockplus.org/easyprivacy.txt"
-  #anti-coin
-  "https://raw.githubusercontent.com/hoshsadiq/adblock-nocoin-list/master/nocoin.txt"
   #damengzhu
   "https://raw.githubusercontent.com/damengzhu/banad/main/jiekouAD.txt"
-  #xinggsf
-  "https://raw.githubusercontent.com/xinggsf/Adblock-Plus-Rule/master/mv.txt"
   #cjx
   "https://raw.githubusercontent.com/cjx82630/cjxlist/master/cjx-annoyance.txt"
   #anti-anti-ad
