@@ -2,7 +2,7 @@
 ! Title: AdRules DNS List
 ! Expires: 1 (update frequency)
 ! Total count: 174056
-! Update: 2026-02-21 10:02:55(GMT+8)
+! Update: 2026-02-21 10:29:04(GMT+8)
 /(https?:\/\/)104\.154\..{100,}/
 /(https?:\/\/)104\.197\..{100,}/
 /(https?:\/\/)104\.198\..{100,}/
