@@ -7,7 +7,7 @@
 ## Description
 
 本仓库源自 [Cats-Team 维护的 AdRules](https://github.com/Cats-Team/AdRules)
-出于个人使用目的进行了修改，并采用了更偏激的规则，感谢原项目的付出和开发。
+出于个人使用目的进行了修改，采用了更偏激的规则，为便于日后维护未进行 Fork，在此致歉并感谢原项目的付出。
 
 ## Rules
 
