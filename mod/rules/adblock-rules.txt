@@ -1,27 +1,24 @@
-!Block Page Visibility
-*##+js(aeld, pagehide)
-*##+js(aeld, visibilitychange)
-
-!全民k歌
-||y.qq.com/music/common/upload/t_kg_activity_show^
-||y.gtimg.cn/music/common//upload/kg_ad^
-||us.l.qq.com/exapp^
-||httpdns.kg.qq.com^
-
-!抖音部分广告
-!番茄小说广告
+!抖音/番茄小说
 ||ads*-normal*.zijieapi.com^
 ||p*-ad-sign.byteimg.com^
-
-! 快手AD
+! 快手
 ||yoda.kwd.inkuai.com^
 ||gdfp.gifshow.com^
 ||volceapplog.com^
 
-!小米遥控器
-||home.mi.com/cgi-op/api/v1/recommendation/banner^
+!Block Page Visibility
+*##+js(aeld, pagehide)
+*##+js(aeld, visibilitychange)
 
-!由asky88提供的不太记得是什么作用的规则
-||xj-landing.gdtimg.com^
-||*/vhot2.qqvideo.tc.qq.com^
-||soup.v.qq.com^
+!一些视频网站
+www.czzymovie.com##.swiper-wrapper
+www.yinfans.*###popup
+www.libvio.*##.popup
+
+! 哔哩哔哩漫画
+$removeparam=vd_source
+manga.bilibili.com##.app-promo
+
+! 大陆必应
+$removeparam=rdr
+$removeparam=rdrig
