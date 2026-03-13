@@ -12,8 +12,8 @@
 
 !一些视频网站
 www.czzymovie.com##.swiper-wrapper
-www.yinfans.*###popup
-www.libvio.*##.popup
+yinfans.*###popup
+libvio.*##.popup
 
 ! 哔哩哔哩漫画
 $removeparam=vd_source
