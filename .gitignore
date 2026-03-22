@@ -8,6 +8,7 @@ __pycache__/
 
 # Runtime logs
 download_failed.log
+dns_prune_cache.json
 
 # JetBrains IDE
 .idea
