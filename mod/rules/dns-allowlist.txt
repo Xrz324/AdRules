@@ -1,3 +1,5 @@
 #!-白名单-!#
+# 精确域名: example.com 或 ||example.com^
+# 正则表达式: /^ads\./
 
 #---END---#
