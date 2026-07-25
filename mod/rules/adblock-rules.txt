@@ -1,19 +1,30 @@
-!抖音/番茄小说
-||ads*-normal*.zijieapi.com^
-||p*-ad-sign.byteimg.com^
-! 快手
-||yoda.kwd.inkuai.com^
-||gdfp.gifshow.com^
-||volceapplog.com^
-
 !Block Page Visibility
 *##+js(aeld, pagehide)
 *##+js(aeld, visibilitychange)
 
-!一些视频网站
-www.czzymovie.com##.swiper-wrapper
-yinfans.*###popup
-libvio.*##.popup
+! General Rules
+||ad.*^
+||ads.*^
+||adsfile.*^
+||*.ad.*^
+||*.ads.*^
+||gtm.*^
+||sgtm.*^
+||load.gtm.*^
+||load.sgtm.*^
+||load.ss.*^
+||load.sst.*^
+||log.*^
+||logs.*^
+||applog.*^
+||applogs.*^
+||track.*^
+||tracking.*^
+||sanalytics.*^
+
+!抖音
+||ads*-normal*.zijieapi.com^
+||p*-ad-sign.byteimg.com^
 
 ! 哔哩哔哩漫画
 $removeparam=vd_source
