@@ -1,8 +1,5 @@
-<center>
 
-<h1>自用AdRules</h1>
-
-</center>
+<h1>Adblock-Rules</h1>
 
 ## Rules
 
