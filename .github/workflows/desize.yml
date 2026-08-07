@@ -17,7 +17,7 @@ jobs:
 
       - name: Clean up history
         run: |
-          curl -fsSL -o bfg.jar https://repo1.maven.org/maven2/com/madgag/bfg/1.14.0/bfg-1.14.0.jar
+          curl -fsSL -o bfg.jar https://repo1.maven.org/maven2/com/madgag/bfg/1.15.0/bfg-1.15.0.jar
           java -jar bfg.jar --strip-blobs-bigger-than 10K -fs 100M repo_gh
           cd repo_gh
           git reflog expire --expire=now --all
