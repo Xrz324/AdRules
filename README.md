@@ -1,17 +1,16 @@
-
 <h1>Adblock-Rules</h1>
 
 ## Rules
 
 - 内容过滤
-    - `adblock.txt`
+  - `adblock.txt`
 - DNS 过滤（ABP 语法）
-    - `dns.txt`
+  - `dns.txt`
 - 代理工具规则集
-    - `adrules-singbox.srs`
-    - `adrules-mihomo.mrs`
+  - `adrules-singbox.srs`
+  - `adrules-mihomo.mrs`
 - Mihomo 补充（用于覆盖 mrs 无法表达的规则）
-    - `adrules-mihomo.yaml`
+  - `adrules-mihomo.yaml`
 
 ## Notes
 
