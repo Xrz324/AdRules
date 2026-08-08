@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "singbox": {
+    "version": "1.11.11",
+    "download_url": "https://github.com/SagerNet/sing-box/releases/download/v{version}/sing-box-{version}-linux-amd64.tar.gz"
+  },
+  "mihomo": {
+    "channel": "stable",
+    "version": "",
+    "api_base": "https://api.github.com/repos/MetaCubeX/mihomo",
+    "amd64_level": "v2"
+  }
+}
