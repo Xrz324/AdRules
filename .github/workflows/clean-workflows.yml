@@ -2,7 +2,7 @@ name: Clean workflow runs
 
 on:
   schedule:
-    - cron: '0 12 * * 1'
+    - cron: "0 4 * * 1"
   workflow_dispatch:
 
 jobs:
@@ -17,5 +17,5 @@ jobs:
         with:
           token: ${{ github.token }}
           repository: ${{ github.repository }}
-          retain_days: 3
+          retain_days: 2
           keep_minimum_runs: 1
