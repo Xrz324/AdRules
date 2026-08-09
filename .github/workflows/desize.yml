@@ -2,7 +2,7 @@ name: Desize
 
 on:
   schedule:
-    - cron: "0 2 */2 * *"
+    - cron: "0 2 */3 * *"
   workflow_dispatch:
 
 jobs:
@@ -18,7 +18,7 @@ jobs:
       - name: Clean up history
         run: |
           curl -fsSL -o bfg.jar https://repo1.maven.org/maven2/com/madgag/bfg/1.15.0/bfg-1.15.0.jar
-          java -jar bfg.jar --strip-blobs-bigger-than 10K -fs 100M repo_gh
+          java -jar bfg.jar --strip-blobs-bigger-than 1K -fs 100M repo_gh
           cd repo_gh
           git reflog expire --expire=now --all
           git gc --prune=now --aggressive
