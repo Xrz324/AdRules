@@ -3,6 +3,7 @@
 # ||example.com^
 # /^example\./
 
+szlong.weixin.qq.com
 pull-flv-l11.douyincdn.com
 
 #---END---#

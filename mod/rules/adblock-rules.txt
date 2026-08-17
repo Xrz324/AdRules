@@ -6,6 +6,7 @@
 ||ad.*^
 ||ads.*^
 ||adsfile.*^
+||adsserving.*^
 ||*.ad.*^
 ||*.ads.*^
 ||gtm.*^
@@ -20,11 +21,8 @@
 ||applogs.*^
 ||track.*^
 ||tracking.*^
+||clientlog.*^
 ||sanalytics.*^
-
-!抖音
-||ads*-normal*.zijieapi.com^
-||p*-ad-sign.byteimg.com^
 
 ! 哔哩哔哩漫画
 $removeparam=vd_source
