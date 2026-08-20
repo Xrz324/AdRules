@@ -9,6 +9,7 @@
 ||adsserving.*^
 ||gtm.*^
 ||sgtm.*^
+||utiq.*^
 ||load.gtm.*^
 ||load.sgtm.*^
 ||load.ss.*^
@@ -20,7 +21,15 @@
 ||track.*^
 ||tracking.*^
 ||clientlog.*^
+||metric.*^
+||smetric.*^
+||smetrics.*^
+||analytics.*^
 ||sanalytics.*^
+
+email.*$image
+*.marketingcloudqaops.com$image
+*.marketingcloudqaapis.com$image
 
 ! 哔哩哔哩漫画
 $removeparam=vd_source
