@@ -3,6 +3,9 @@
 *##+js(aeld, visibilitychange)
 
 ! General Rules
+##[id^="ad-"]
+##[id$="-ad"]
+
 ||ad.*^
 ||ads.*^
 ||adsfile.*^
@@ -22,6 +25,7 @@
 ||tracking.*^
 ||clientlog.*^
 ||metric.*^
+||metrics.*^
 ||smetric.*^
 ||smetrics.*^
 ||analytics.*^
