@@ -7,8 +7,6 @@
 ||ads.*^
 ||adsfile.*^
 ||adsserving.*^
-||*.ad.*^
-||*.ads.*^
 ||gtm.*^
 ||sgtm.*^
 ||load.gtm.*^
