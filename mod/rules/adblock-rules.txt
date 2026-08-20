@@ -1,11 +1,12 @@
-!Block Page Visibility
+! Block Page Visibility
 *##+js(aeld, pagehide)
 *##+js(aeld, visibilitychange)
 
-! General Rules
+! General CCS Rules
 ##[id^="ad-"]
 ##[id$="-ad"]
 
+! General Domain Rules
 ||ad.*^
 ||ads.*^
 ||adsfile.*^
@@ -21,17 +22,30 @@
 ||logs.*^
 ||applog.*^
 ||applogs.*^
+||tr.*^
+||trk.*^
+||trck.*^
 ||track.*^
+||strack.*^
+||tracker.*^
 ||tracking.*^
+||tracklabs.*^
 ||clientlog.*^
 ||metric.*^
 ||metrics.*^
 ||smetric.*^
 ||smetrics.*^
+||analytic.*^
+||analytics-*^
 ||analytics.*^
 ||sanalytics.*^
 
+track.*$image
 email.*$image
+*.sfmc-osl.com$image
+*.sfmc-marketing.com$image
+*.click.s11.sfmc-osl.com$image
+*.cp-sap.sfmc-content.com$image
 *.marketingcloudqaops.com$image
 *.marketingcloudqaapis.com$image
 
