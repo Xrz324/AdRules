@@ -1,18 +1,21 @@
-<h1>Adblock-Rules</h1>
+# Adblock-Rules
+
+English | [简体中文](README_zh-CN.md)
 
 ## Rules
 
-- 内容过滤
+- Content filtering
   - `adblock.txt`
-- DNS 过滤（ABP 语法）
+- DNS filtering (ABP syntax)
   - `dns.txt`
-- 代理工具规则集
+- Rulesets for proxy tools
   - `adrules-singbox.srs`
   - `adrules-mihomo.mrs`
-- Mihomo 补充（用于覆盖 mrs 无法表达的规则）
+- Mihomo supplements (for rules that cannot be expressed in MRS)
   - `adrules-mihomo.yaml`
 
 ## Notes
 
-- `dns.txt` 简化时，被等价 `$badfilter` 禁用的规则会被有意省略。
-- Mihomo 应同时加载 `adrules-mihomo.mrs` 和 `adrules-mihomo.yaml`，后者仅为补充文件，不能作为完整规则使用。
+- When `dns.txt` is simplified, rules disabled by an equivalent `$badfilter` rule are intentionally omitted.
+- Mihomo should load both `adrules-mihomo.mrs` and `adrules-mihomo.yaml`. The latter is a supplement only and cannot be used as a complete ruleset.
+- This project includes some relatively aggressive blocking rules. Review them before deciding whether to use them.
