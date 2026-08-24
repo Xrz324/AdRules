@@ -11,13 +11,12 @@
 ||ads.*^
 ||adsfile.*^
 ||adsserving.*^
+||rtb-eu.*^
+||rtb.*^
+||utiq.*^
 ||gtm.*^
 ||sgtm.*^
-||utiq.*^
-||load.gtm.*^
-||load.sgtm.*^
-||load.ss.*^
-||load.sst.*^
+||ssgtm.*^
 ||log.*^
 ||logs.*^
 ||applog.*^
@@ -31,6 +30,7 @@
 ||tracking.*^
 ||tracklabs.*^
 ||clientlog.*^
+||telemetry.*^
 ||metric.*^
 ||metrics.*^
 ||smetric.*^
